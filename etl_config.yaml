@@ -1,0 +1,20 @@
+postgresql:
+  host: "localhost"
+  port: 5432
+  database: "sicred"
+  schema: "sicred"
+  user: "sicred_user"
+  password: "sicred_pass"
+
+spark:
+  master: "local[*]"
+  app_name: "SiCred-ETL-CarteiraFlat"
+  executor_memory: "2g"
+  driver_memory: "1g"
+  shuffle_partitions: 8
+  log_level: "WARN"
+
+etl:
+  output_dir: "/data/output"
+  output_filename: "carteira_flat"
+  append_timestamp: true

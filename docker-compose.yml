@@ -1,0 +1,101 @@
+services:
+
+  postgres:
+    image: sicred-postgres:1.0.0
+    container_name: sicred-postgres
+    environment:
+      POSTGRES_DB: sicred
+      POSTGRES_USER: sicred_user
+      POSTGRES_PASSWORD: sicred_pass
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/pgdata
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sicred_user -d sicred"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - sicred-network
+
+  spark-master:
+    image: apache/spark:3.5.1-python3
+    container_name: sicred-spark-master
+    user: root
+    environment:
+      SPARK_MODE: master
+      SPARK_MASTER_HOST: spark-master
+      SPARK_MASTER_PORT: "7077"
+      SPARK_MASTER_WEBUI_PORT: "8080"
+    ports:
+      - "7077:7077"
+      - "8080:8080"
+    command: >
+      bash -c "/opt/spark/sbin/start-master.sh &&
+               tail -f /opt/spark/logs/*"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - sicred-network
+
+  spark-worker:
+    image: apache/spark:3.5.1-python3
+    container_name: sicred-spark-worker
+    user: root
+    environment:
+      SPARK_MODE: worker
+      SPARK_MASTER_URL: spark://spark-master:7077
+      SPARK_WORKER_CORES: "2"
+      SPARK_WORKER_MEMORY: 2G
+    command: >
+      bash -c "/opt/spark/sbin/start-worker.sh spark://spark-master:7077 &&
+               tail -f /opt/spark/logs/*"
+    depends_on:
+      spark-master:
+        condition: service_healthy
+    networks:
+      - sicred-network
+
+  etl:
+    image: sicred-etl:1.0.0
+    container_name: sicred-etl
+    environment:
+      PG_HOST: postgres
+      PG_PORT: "5432"
+      PG_DATABASE: sicred
+      PG_SCHEMA: sicred
+      PG_USER: sicred_user
+      PG_PASSWORD: sicred_pass
+      SPARK_MASTER: local[*]
+      JDBC_JAR: /opt/spark/jars/postgresql-42.7.3.jar
+      OUTPUT_DIR: /data/output
+    command:
+      - "--output-dir"
+      - "/data/output"
+      - "--append-timestamp"
+    volumes:
+      - ./output:/data/output
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - sicred-network
+    restart: "no"
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  sicred-network:
+    driver: bridge
