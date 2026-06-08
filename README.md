@@ -82,7 +82,7 @@ Todos os JOINs do pipeline usam LEFT JOIN. Em Asset Management, perder uma posi�
 Valores financeiros exigem precisão decimal exata. O tipo `Double` usa ponto flutuante binário e introduz erros de arredondamento — `0.1 + 0.2 = 0.30000000000000004`. O `DecimalType(18,6)` do Spark garante precisão exata, essencial para cálculo de PL e valor financeiro.
 
 ### Docker
-Docker garante que o ambiente de execução seja idêntico em qualquer máquina. Sem Docker, o avaliador precisaria instalar PostgreSQL, Java, Spark e configurar variáveis de ambiente manualmente — gerando risco de "funciona na minha máquina". Com `docker compose up etl` o pipeline executa do zero em qualquer ambiente.
+Docker garante que o ambiente de execução seja idêntico em qualquer máquina. Sem Docker, seria preciso instalar PostgreSQL, Java, Spark e configurar variáveis de ambiente manualmente, gerando risco de "funciona na minha máquina". Com `docker compose up etl` o pipeline executa do zero em qualquer ambiente.
 
 ### Estrutura de pastas
 A separação em `db/`, `spark/`, `tests/` e `docker/` segue o princípio de separação de responsabilidades. Cada pasta tem uma função clara e pode ser evoluída independentemente. Scripts SQL ficam em `db/` para serem versionados e executados em qualquer ambiente, não apenas via Docker.
@@ -92,7 +92,7 @@ A separação em `db/`, `spark/`, `tests/` e `docker/` segue o princípio de sep
 ## O que eu faria com mais tempo?
 
 ### Processamento incremental (delta load)
-Atualmente o pipeline faz full load — lê todas as posições a cada execução. Em produção com anos de histórico isso seria inviável. Implementaria processamento incremental com parâmetros `--data-inicio` e `--data-fim` para processar apenas o delta diário.
+Atualmente o pipeline faz full load , lê todas as posições a cada execução. Em produção com anos de histórico isso seria inviável. Implementaria processamento incremental com parâmetros `--data-inicio` e `--data-fim` para processar apenas o delta diário.
 
 ### Orquestração com Apache Airflow
 O pipeline hoje é executado manualmente via `docker compose up etl`. Em produção, precisaria ser agendado para rodar automaticamente após o fechamento do mercado (após as 18h). Implementaria uma DAG no Airflow com dependências, retentativas automáticas e alertas por e-mail em caso de falha.
